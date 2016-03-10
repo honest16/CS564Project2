@@ -1,3 +1,5 @@
+--comment
+
 SELECT * 
 FROM (
 	SELECT *, rank() OVER (ORDER BY sub.weeklysales DESC) AS SalesRank
