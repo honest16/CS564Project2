@@ -1,8 +1,8 @@
-SELECT dept, SalesPerWeek 
+SELECT dept, norm_sales 
 FROM (
-	SELECT *, rank() OVER (ORDER BY SalesPerWeek DESC) AS OrderRank
+	SELECT *, rank() OVER (ORDER BY norm_sales DESC) AS OrderRank
 	FROM (
-		SELECT dept, SUM(sub.weeklysales/ sub.size) AS SalesPerWeek
+		SELECT dept, SUM(sub.weeklysales/ sub.size) AS norm_sales
 		FROM (
 			SELECT * 
 			FROM sales INNER JOIN stores ON sales.store = stores.store

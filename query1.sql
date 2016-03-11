@@ -1,24 +1,31 @@
-
-
-SELECT * 
+SELECT store, sales 
 FROM (
-	SELECT *, rank() OVER (ORDER BY sub.weeklysales DESC) AS SalesRank
+	SELECT *, rank() OVER (ORDER BY sub2.Sales DESC) AS SalesRank
 	FROM (
-		SELECT * 
-		FROM sales INNER JOIN holidays ON sales.weekdate = holidays.weekdate
-		WHERE isHoliday = true
-	) AS sub
-) AS sub2
-WHERE SalesRank = 1;
+		SELECT store, sum(weeklysales) AS Sales
+		FROM (
+			SELECT store, weeklysales 
+			FROM sales INNER JOIN holidays ON sales.weekdate = holidays.weekdate
+			WHERE isHoliday = true	
+			) AS sub
+		GROUP BY store
+		) AS sub2
+	) AS sub3
+WHERE SalesRank = 1
 
-SELECT * 
+UNION ALL 
+
+SELECT store, sales 
 FROM (
-	SELECT *, rank() OVER (ORDER BY sub.weeklysales ASC) AS SalesRank
+	SELECT *, rank() OVER (ORDER BY sub2.Sales) AS SalesRank
 	FROM (
-		SELECT * 
-		FROM sales INNER JOIN holidays ON sales.weekdate = holidays.weekdate
-		WHERE isHoliday = true
-	) AS sub
-) AS sub2
+		SELECT store, sum(weeklysales) AS Sales
+		FROM (
+			SELECT store, weeklysales 
+			FROM sales INNER JOIN holidays ON sales.weekdate = holidays.weekdate
+			WHERE isHoliday = true	
+			) AS sub
+		GROUP BY store
+		) AS sub2
+	) AS sub3
 WHERE SalesRank = 1;
-
