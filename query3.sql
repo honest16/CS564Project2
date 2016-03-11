@@ -1,4 +1,4 @@
-SELECT fuel2.store, maxfuelprice, maxunemploymentrate 
+SELECT fuel2.store 
 FROM (
 	(SELECT *
 	FROM (
