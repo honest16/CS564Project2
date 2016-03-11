@@ -1,4 +1,4 @@
-SELECT stores.type, DATE_PART('month', weekdate), sum(weeklysales) 
+SELECT DATE_PART('month', weekdate) AS months, stores.type, sum(weeklysales) 
 FROM sales INNER JOIN stores ON sales.store = stores.store 
-GROUP BY type, date_part 
-ORDER BY type, date_part;
+GROUP BY type, months 
+ORDER BY months, type;
