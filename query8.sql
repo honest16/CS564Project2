@@ -1,4 +1,3 @@
-
 CREATE OR REPLACE VIEW view1 AS (SELECT  Dept
 FROM 
 (SELECT Sales.Store, Sales.Dept, SUM(Sales.WeeklySales) as DeptSales
@@ -31,4 +30,5 @@ GROUP BY sdds.dept;
 
 
 DROP VIEW view1;
+
 

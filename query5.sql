@@ -2,5 +2,3 @@ SELECT to_char(to_timestamp(Date_Part('month', sales.weekdate)::text,'MM'),'TMmo
 FROM sales INNER JOIN stores ON sales.store = stores.store 
 GROUP BY type, Date_Part('month',sales.weekdate)
 ORDER BY Date_Part('month',sales.weekdate), type;
-
-

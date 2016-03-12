@@ -1,5 +1,3 @@
-
-
 DROP TABLE Output7;
 
 CREATE TABLE Output7(AttributeName VARCHAR(20), CorrSign char(1), CorrValue float);
