@@ -10,6 +10,7 @@ public class Sample {
 		String command, previousCommand, url, username;
 		int seed = 0;
 		boolean redoingCommand = false;
+        boolean lastCommandViable = true;
 		
 		url = "jdbc:postgresql://stampy.cs.wisc.edu/cs564instr?sslfactory=org.postgresql.ssl.NonValidatingFactory&ssl";
 		username = "";
@@ -17,12 +18,14 @@ public class Sample {
 		command = "";
 		
 		//print out some helpful information like commands and help menu
+        System.out.println("\ntype \"help\" for commands and information\n");
 		
 		do {
 			if(!redoingCommand) System.out.print(username + "> ");
-			if(!command.equals("")) previousCommand = command;
-			if(!redoingCommand) command = in.nextLine();
+			if(!command.equals("") && !command.equals("help") && lastCommandViable) previousCommand = command;
+			if(!redoingCommand) {command = in.nextLine(); command = command.trim();}
 			redoingCommand = false;
+            lastCommandViable = true;
 			switch(command.split(" ")[0]) {
 					case "seed":
 						//make sure they passed in a number for the seed
@@ -42,7 +45,7 @@ public class Sample {
 						int numRecords = 0;
 						
 						if(c == null) {
-							System.out.println("Error: connect to a database first. Use the connect command.");
+							System.out.println("Error: connect to a database first. Use the 'connect' command.");
 							break;
 						}
 						
@@ -117,8 +120,10 @@ public class Sample {
 						
 						break;
 					case "connect":
-						String password;
+						String password = "";
+                        String previousURL = "";
 						String className = "org.postgresql.Driver";
+
 						try {
 							Class.forName(className);
 						} catch (ClassNotFoundException e) {
@@ -126,25 +131,34 @@ public class Sample {
 						}
 						
 						if(command.split(" ").length == 4) {
+                            previousURL = url;
 							url = command.split(" ")[1];
 							username = command.split(" ")[2];
 							password = command.split(" ")[3];
-						} else if(command.split(" ").length == 3) {
-							//use default url if none provided
-							username = command.split(" ")[1];
-							password = command.split(" ")[2];
-							try {
-								c = DriverManager.getConnection(url); //, username, password);
-							} catch(SQLException e) {
-								System.out.println("Error: Cannot get connection to " + url);
-								username = "";
-								e.printStackTrace();
-							}	
-						} else {
-							System.out.println("Usage: > connect [url] <username> <password>");
-						}				
+						} else if(command.split(" ").length == 2) {
+                            previousURL = url;
+                            url = command.split(" ")[1];                            
+                        } else if(command.split(" ").length != 1) {
+                            System.out.println("Usage: > connect [url] <username> <password>");
+                            break;
+                        }
+    
+                        try {
+                            if(command.split(" ").length == 4) {                           
+    							c = DriverManager.getConnection(url, username, password);
+                            } else {
+                                c = DriverManager.getConnection(url);
+                            }
+						} catch(SQLException e) {
+							System.out.println("Error: Cannot get connection to " + url);
+							username = "";
+                            url = previousURL;
+							e.printStackTrace();
+						}			
 						
 						break;
+                    case "q":
+                    case "quit":
 					case "exit": 
 						try {
 							if(c != null) c.close();
@@ -153,25 +167,35 @@ public class Sample {
 						}
 						System.exit(1);
 						break;
-					case "\t":
+					case "r":
 						redoingCommand = true;
 						command = previousCommand;
 						break;
 					case "help":
 						System.out.println("\n------ helpful information ------");
 						System.out.println("url  = " + url);
-						System.out.println("user = " + username);
+						System.out.println("user = " + (username.equals("") ? "(Not signed in as a user)" : username));
 						System.out.println("seed = " + seed);
 						System.out.println("last command = " + previousCommand);
 						System.out.println("\n------ commands ------");
-						System.out.println("seed <seed value>");
-						System.out.println("connect [url] <username> <password>");
+						System.out.println("seed <seed value>\n");
+						System.out.println("connect");
+                        System.out.println("\t +connects you to the last url it was able to connect to. Default url otherwise.");
+                        System.out.println("connect <url>");
+                        System.out.println("\t +connects you to the specified url.");
+                        System.out.println("connect <url> <username> <password>");
+                        System.out.println("\t +connects you to the specified url with the given credentials.\n");
 						System.out.println("sample <numSamples> <table or query>");
-						System.out.println("\\t [enter] rerun last command");
-						System.out.println("exit");
+                        System.out.println("\t +sample the specified number of samples from the table or query");
+                        System.out.println("\t + ex. \"sample 5 holidays\"");
+                        System.out.println("\t + ex. \"sample 5 select * from holidays where isholiday = false and weekdate < '2011-05-06'\"");
+						System.out.println("r");
+                        System.out.println("\t +re-execute the last command.\n");
+						System.out.println("exit, quit, q");
 						break;
 					default:
-						if(command.length() > 0) System.out.println("Unknown Command" + command);
+						if(command.length() > 0) System.out.println("Unknown Command : " + command);
+                        lastCommandViable = false;
 			}
 		} while(!command.equals("exit"));
 	}
