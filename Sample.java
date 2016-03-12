@@ -134,7 +134,7 @@ public class Sample {
 							username = command.split(" ")[1];
 							password = command.split(" ")[2];
 							try {
-								c = DriverManager.getConnection(url, username, password);
+								c = DriverManager.getConnection(url); //, username, password);
 							} catch(SQLException e) {
 								System.out.println("Error: Cannot get connection to " + url);
 								username = "";
