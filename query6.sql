@@ -1,18 +1,15 @@
-SELECT DISTINCT storeDept.Store
-FROM 
-(SELECT Store, Dept as dpt1, (Extract(month from Sales.WeekDate)) as month, Extract(year from Sales.WeekDate) as year
+CREATE OR REPLACE VIEW view1 AS(SELECT Sales.Store, Sales.Dept, Date_part('month', Sales.weekdate) as month, Date_part('year', weekdate) as year, WeeklySales
 FROM Sales
-GROUP BY Store, dpt1 , month, year ORDER BY Store, dpt1, month, year) storeDeptMonthYear
-
-INNER JOIN
-
-(SELECT Store, Dept as dpt2
-FROM Sales
-GROUP BY Store, dpt2 ORDER BY Store, dpt2) storeDept 
-
-ON storeDeptMonthYear.Store = storeDept.Store 
-
-GROUP BY storeDept.Store, dpt1, year, dpt2
-HAVING Count(DISTINCT storeDeptMonthYear.month) = 12 AND Count(DISTINCT storeDeptMonthYear.dpt1) = Count(DISTINCT storeDept.dpt2)
+ORDER BY store, dept, month, year)
 ;
 
+CREATE OR REPLACE VIEW TotNumDept AS (SELECT store, COUNT(DISTINCT dept) FROM view1 GROUP BY store, year);
+
+CREATE OR REPLACE VIEW AllMonthsDept AS (SELECT store, dept, COUNT(DISTINCT month) AS numMonths, year FROM view1 GROUP BY store, dept, year HAVING COUNT(DISTINCT month) = 12);
+
+CREATE OR REPLACE VIEW CountDept AS (SELECT store, COUNT(DISTINCT dept) AS deptCount, year FROM AllMonthsDept GROUP BY store, year);
+
+SELECT TotNumDept.store FROM TotNumDept INNER JOIN CountDept ON TotNumDept.Store = CountDept.Store WHERE TotNumDept.count= CountDept.deptCount;
+
+
+DROP VIEW view1, TotNumDept, AllMonthsDept, CountDept;
