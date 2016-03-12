@@ -70,10 +70,13 @@ public class Sample {
 							boolean printAll = numRecords < numSamples;
 							numSamples = Math.min(numRecords, numSamples);
 							
+                            //print column names here
+                            boolean firstTime = true;
 							while(numSelected < numSamples) {
 								if((numRecords - numConsidered) * rng.nextFloat() < numSamples - numSelected) {
 									//include the (numConsidered + 1)st record. Slightly different than in the project spec
-									fetchAndPrintRecord(table, true, numConsidered, c);
+									fetchAndPrintRecord(table, true, numConsidered, c, firstTime);
+                                    firstTime = false;
 									numSelected++;
 								}
 								numConsidered++;
@@ -99,11 +102,13 @@ public class Sample {
 							boolean printAll = numRecords < numSamples;
 							numSamples = Math.min(numRecords, numSamples);
 							
-							
+                            //print column names here
+							boolean firstTime = true;
 							while(numSelected < numSamples) {
 								if((numRecords - numConsidered) * rng.nextFloat() < numSamples - numSelected) {
 									//include the (numConsidered + 1)st record. Slightly different than in the project spec
-									fetchAndPrintRecord(query, false, numConsidered, c);
+									fetchAndPrintRecord(query, false, numConsidered, c, firstTime);
+                                    firstTime = false;
 									numSelected++;
 								}
 								numConsidered++;
@@ -178,7 +183,8 @@ public class Sample {
 						System.out.println("seed = " + seed);
 						System.out.println("last command = " + previousCommand);
 						System.out.println("\n------ commands ------");
-						System.out.println("seed <seed value>\n");
+						System.out.println("seed <seed value>");
+                        System.out.println("\t +gives the specified seed to RNGesus.\n");
 						System.out.println("connect");
                         System.out.println("\t +connects you to the last url it was able to connect to. Default url otherwise.");
                         System.out.println("connect <url>");
@@ -188,7 +194,7 @@ public class Sample {
 						System.out.println("sample <numSamples> <table or query>");
                         System.out.println("\t +sample the specified number of samples from the table or query");
                         System.out.println("\t + ex. \"sample 5 holidays\"");
-                        System.out.println("\t + ex. \"sample 5 select * from holidays where isholiday = false and weekdate < '2011-05-06'\"");
+                        System.out.println("\t + ex. \"sample 5 select * from holidays where isholiday = false and weekdate < '2011-05-06'\"\n");
 						System.out.println("r");
                         System.out.println("\t +re-execute the last command.\n");
 						System.out.println("exit, quit, q");
@@ -234,7 +240,7 @@ public class Sample {
 		return numRecords;
 	}
 	
-	private static void fetchAndPrintRecord(String query, boolean isTable, int numConsidered, Connection c) {
+	private static void fetchAndPrintRecord(String query, boolean isTable, int numConsidered, Connection c, boolean printColNames) {
 		try {
 			Statement stmt = c.createStatement();
 			ResultSet rs;
@@ -246,9 +252,18 @@ public class Sample {
 			ResultSetMetaData rsmd = rs.getMetaData();
 			ArrayList<String> cols = new ArrayList<String>();
 			for(int i = 1; i <= rsmd.getColumnCount(); i++) {
-				if(!rsmd.getColumnName(i).equals("rownum")) cols.add(rsmd.getColumnName(i));
+				if(!rsmd.getColumnName(i).equals("rownum")) {
+                    cols.add(rsmd.getColumnName(i));                  
+                }
 			}
+
 			while(rs.next()) {
+                if(printColNames) {
+                    for(int i = 0; i < cols.size(); i++) {
+                        System.out.print(cols.get(i) + ((i != cols.size() - 1) ? " | " : ""));
+				    }
+                    System.out.println();
+                }
 				for(int i = 0; i < cols.size(); i++) {
 					String seperator = "";
 					if(i < cols.size() - 1) seperator = " | ";
