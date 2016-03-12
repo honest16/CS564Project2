@@ -1,5 +1,5 @@
-DROP VIEW view1;
-CREATE VIEW view1 AS (
+
+CREATE OR REPLACE VIEW view1 AS (
 SELECT sdws.yr, sdws.qtr, sdws.store_a_sales, sts.store_b_sales
 FROM
 (SELECT yr, qtr, sum AS store_a_sales
@@ -36,10 +36,10 @@ INNER JOIN
 	
 ON sdws.yr = sts.yr AND sdws.qtr = sts.qtr);
 
-SELECT * FROM view1 UNION ALL SELECT view1.yr, null as qtr, sum(view1.store_a_sales) AS store_a_sales, sum(view1.store_b_sales) AS store_b_sales FROM view1 GROUP BY yr ORDER BY yr, qtr
-
+SELECT * FROM view1 UNION ALL SELECT view1.yr, null as qtr, sum(view1.store_a_sales) AS store_a_sales, sum(view1.store_b_sales) AS store_b_sales FROM view1 GROUP BY yr ORDER BY yr, qtr;
+DROP VIEW view1
 ;
 
---SELECT * FROM view1 UNION ALL 
+
 
 
