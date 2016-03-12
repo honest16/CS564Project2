@@ -31,7 +31,7 @@ public class Sample {
 							rng = new Random(seed);
 							System.out.println("Seed set to " + seed);
 						} catch (NumberFormatException e) {
-							System.out.println(command.split(" ")[1] + " is not a valid seed");
+							System.out.println(command.split(" ")[1] + " is not a valid seed. It must be an integer.");
 							System.out.println("Usage: > seed <seed value>");
 						}
 						break;
@@ -70,30 +70,7 @@ public class Sample {
 							while(numSelected < numSamples) {
 								if((numRecords - numConsidered) * rng.nextFloat() < numSamples - numSelected) {
 									//include the (numConsidered + 1)st record. Slightly different than in the project spec
-									
-									try {
-										Statement stmt = c.createStatement();
-										ResultSet rs = stmt.executeQuery("select * from (select ROW_NUMBER() over (order by weekdate) as rownum, * from " + table + ") as tbl where tbl.rownum = " + (numConsidered + 1) + ";");
-										ResultSetMetaData rsmd = rs.getMetaData();
-										ArrayList<String> cols = new ArrayList<String>();
-										for(int i = 1; i <= rsmd.getColumnCount(); i++) {
-											if(!rsmd.getColumnName(i).equals("rownum")) cols.add(rsmd.getColumnName(i));
-										}
-										while(rs.next()) {
-											for(int i = 0; i < cols.size(); i++) {
-												String seperator = "";
-												if(i < cols.size() - 1) seperator = " | ";
-												System.out.print(rs.getString(cols.get(i)) + seperator);
-											}
-											System.out.println();
-										}
-										rs.close();
-										stmt.close();
-										
-									} catch(SQLException e) {
-										System.out.println("Error: cannot process sample query");
-										e.printStackTrace();
-									}
+									fetchAndPrintRecord(table, true, numConsidered, c);
 									numSelected++;
 								}
 								numConsidered++;
@@ -103,35 +80,41 @@ public class Sample {
 								System.out.println("Note: All records of table " + table + " were returned.");
 							}
 							
-							
-							
 						} else if(command.split(" ").length > 3) {
 							StringBuilder strBuilder = new StringBuilder();
 							for(int i = 2; i < command.split(" ").length; i++) {
 								strBuilder.append(command.split(" ")[i] + " ");
 							}
 							query = strBuilder.toString().trim();
+							
+							numRecords = getNumRecordsFromQuery(query, c);
+							if(numRecords < 0) break;
+							
+							int numConsidered = 0;
+							int numSelected = 0;
+							
+							boolean printAll = numRecords < numSamples;
+							numSamples = Math.min(numRecords, numSamples);
+							
+							
+							while(numSelected < numSamples) {
+								if((numRecords - numConsidered) * rng.nextFloat() < numSamples - numSelected) {
+									//include the (numConsidered + 1)st record. Slightly different than in the project spec
+									fetchAndPrintRecord(query, false, numConsidered, c);
+									numSelected++;
+								}
+								numConsidered++;
+							}
+							
+							if(printAll) {
+								System.out.println("Note: All records of query were returned.");
+							}
+								
 						} else {
 							System.out.println("Usage: > sample <number> <table or query>");
+							break;
 						}
-						/*
-						try {
-							Statement stmt = c.createStatement();
-							ResultSet rs = stmt.executeQuery("select * from (select ROW_NUMBER() OVER (order by weekdate) as \"RowNum\", * from " + query + " as tbl where tbl.\"RowNum\" = " + numSamples + ";");
-							while(rs.next()) {
-								String weekdate = rs.getString("weekdate");
-								boolean isHoliday = rs.getBoolean("isHoliday");
-								
-								System.out.println(weekdate + " | " +isHoliday);
-							}
-							rs.close();
-							stmt.close();
-							
-						} catch(SQLException e) {
-							System.out.println("Error: cannot process sample query");
-							e.printStackTrace();
-						}
-						*/
+						
 						break;
 					case "connect":
 						String password;
@@ -157,14 +140,16 @@ public class Sample {
 								username = "";
 								e.printStackTrace();
 							}	
-						}					
+						} else {
+							System.out.println("Usage: > connect [url] <username> <password>");
+						}				
 						
 						break;
 					case "exit": 
 						try {
 							if(c != null) c.close();
 						} catch (SQLException e) {
-							System.out.println("Error: unable to close connection");
+							System.out.println("Error: Unable to close connection");
 						}
 						System.exit(1);
 						break;
@@ -201,11 +186,59 @@ public class Sample {
 			}
 			stmt.close();
 		} catch(SQLException e) {
-			System.out.println("Error: Cannot read number of records in table " + table);
+			System.out.println("Error: Cannot get number of records in table :" + table);
 			numRecords = -1;
 		}
 		
 		return numRecords;
+	}
+	
+	private static int getNumRecordsFromQuery(String query, Connection c) {
+		int numRecords = 0;
+		try {
+			Statement stmt = c.createStatement();
+			ResultSet data = stmt.executeQuery("select count(*) as rowCount from (" + query + ") as countTable;");
+			if(data.next()) {
+				numRecords = data.getInt("rowCount");
+			}
+			stmt.close();
+		} catch(SQLException e) {
+			System.out.println("Error: Cannot read number of records in query");
+			numRecords = -1;
+		}
+		
+		return numRecords;
+	}
+	
+	private static void fetchAndPrintRecord(String query, boolean isTable, int numConsidered, Connection c) {
+		try {
+			Statement stmt = c.createStatement();
+			ResultSet rs;
+			if(isTable) {
+				rs = stmt.executeQuery("select * from (select ROW_NUMBER() over () as rownum, * from " + query + ") as tbl where tbl.rownum = " + (numConsidered + 1) + ";");
+			} else {
+				rs = stmt.executeQuery("select * from (select ROW_NUMBER() over () as rownum, * from (" + query + ") as someHopefullyUniqueTableName) as tbl where tbl.rownum = " + (numConsidered + 1) + ";");
+			}
+			ResultSetMetaData rsmd = rs.getMetaData();
+			ArrayList<String> cols = new ArrayList<String>();
+			for(int i = 1; i <= rsmd.getColumnCount(); i++) {
+				if(!rsmd.getColumnName(i).equals("rownum")) cols.add(rsmd.getColumnName(i));
+			}
+			while(rs.next()) {
+				for(int i = 0; i < cols.size(); i++) {
+					String seperator = "";
+					if(i < cols.size() - 1) seperator = " | ";
+					System.out.print(rs.getString(cols.get(i)) + seperator);
+				}
+				System.out.println();
+			}
+			rs.close();
+			stmt.close();
+			
+		} catch(SQLException e) {
+			System.out.println("Error: Cannot process sample query");
+			e.printStackTrace();
+		}
 	}
 	
 }
